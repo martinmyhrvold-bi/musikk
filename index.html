@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="no" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Musikk">
+<meta name="theme-color" content="#17112B">
+<title>Musikk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEE8FF; --ink:#2A1B4A; --soft:#6E5F92; --card:#FFFFFF; --press:#CFC3F5;
+  --pink:#FF4FA3; --pinkDeep:#D9307F; --teal:#12A594; --bar:#2A1B4A; --barInk:#F6F2FF;
+  --font:'Fredoka', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
+  --btn:#4A3A70; --solid:var(--ink); --fieldBg:#fff; --fieldLine:var(--press);
+}
+/* Mørk modus (standard). Kan byttes i voksenmodus. */
+:root[data-theme="dark"]{
+  --bg:#17112B; --ink:#F3EEFF; --soft:#A99BCB; --card:#251C40; --press:#0B0816; --bar:#0B0816;
+  --btn:#33275A; --solid:#33275A; --fieldBg:#251C40; --fieldLine:#3A2D60;
+}
+.seg .btn.on{background:var(--pink);color:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-tap-highlight-color:transparent}
+body{padding-top:env(safe-area-inset-top,0px);-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
+[hidden]{display:none!important}
+img{max-width:100%;display:block}
+
+/* ---------- Barnevisning ---------- */
+#kid{height:calc(100vh - env(safe-area-inset-top,0px));height:calc(100dvh - env(safe-area-inset-top,0px));
+  display:flex;flex-direction:column;padding:20px 24px 152px}
+#kid[hidden]{display:none}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;flex:none}
+.hello{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:700;line-height:1.05;margin:0;letter-spacing:-.01em}
+.gear{position:relative;width:52px;height:52px;border-radius:50%;font-size:26px;opacity:.4;flex:none;touch-action:none}
+.gear::after{content:"";position:absolute;inset:0;border-radius:50%;border:4px solid var(--pink);transform:scale(0);opacity:0}
+.gear.holding{opacity:1}
+.gear.holding::after{animation:grow 1.4s linear forwards}
+@keyframes grow{to{transform:scale(1);opacity:1}}
+
+/* 3 x 3 ruter som alltid fyller skjermen, uten scrolling */
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:18px}
+.tile{display:flex;flex-direction:column;gap:8px;min-height:0;padding:10px 10px 12px;background:var(--card);border-radius:26px;
+  box-shadow:0 8px 0 var(--press);transition:transform .08s,box-shadow .08s;text-align:left;position:relative}
+.tile:active{transform:translateY(6px);box-shadow:0 2px 0 var(--press)}
+.tile .art{flex:1;min-height:0;width:100%;border-radius:18px;object-fit:cover;background:var(--press)}
+.tile .ph{flex:1;min-height:0;border-radius:18px;display:grid;place-items:center;font-size:clamp(36px,6vmin,64px)}
+.tile .name{flex:none;font-size:clamp(1rem,2.2vmin,1.3rem);font-weight:600;line-height:1.15;padding:0 6px;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile.playing{box-shadow:0 8px 0 var(--pinkDeep);outline:5px solid var(--pink)}
+.tile.playing::before{content:"♪";position:absolute;top:2px;right:2px;width:52px;height:52px;border-radius:50%;
+  background:var(--pink);color:#fff;display:grid;place-items:center;font-size:30px;font-weight:700;z-index:1}
+.empty{grid-column:1/-1;font-size:1.4rem;color:var(--soft);max-width:30ch;line-height:1.4}
+
+/* Sangvindu som legger seg over hjemskjermen */
+#songs{position:fixed;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column;
+  padding:calc(20px + env(safe-area-inset-top,0px)) 24px 152px;animation:up .18s ease-out}
+#songs[hidden]{display:none}
+@keyframes up{from{transform:translateY(24px);opacity:0}}
+.songsTop{display:flex;justify-content:center;margin-bottom:18px;flex:none}
+.close{width:72px;height:72px;border-radius:50%;background:var(--solid);color:#fff;display:grid;place-items:center;box-shadow:0 6px 0 var(--press)}
+.close svg{width:34px;height:34px;stroke:currentColor;stroke-width:3.5;stroke-linecap:round;fill:none}
+.close:active{transform:translateY(3px);box-shadow:0 2px 0 var(--press)}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--bar);color:var(--barInk);border-radius:34px 34px 0 0;
+  padding:16px 24px calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:center}
+.ctrls{display:flex;align-items:center;gap:32px}
+.cbtn{width:68px;height:68px;border-radius:50%;background:var(--btn);display:grid;place-items:center}
+.cbtn svg{width:32px;height:32px;fill:currentColor}
+.cbtn.big{width:96px;height:96px;background:var(--pink);box-shadow:0 6px 0 var(--pinkDeep)}
+.cbtn.big svg{width:46px;height:46px}
+.cbtn:active{transform:translateY(3px)}
+.cbtn.big:active{box-shadow:0 2px 0 var(--pinkDeep)}
+input[type=range]{width:100%;accent-color:var(--pink);height:36px}
+
+.toast{position:fixed;left:50%;top:calc(20px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--solid);color:#fff;
+  padding:14px 22px;border-radius:20px;font-size:1.1rem;max-width:min(90vw,520px);text-align:center;z-index:50;box-shadow:0 8px 24px rgba(42,27,74,.3)}
+
+/* ---------- Oppsett og voksenmodus ---------- */
+.panel{min-height:100%;padding:28px 24px calc(40px + env(safe-area-inset-bottom,0px));max-width:720px;margin:0 auto;-webkit-user-select:text;user-select:text}
+#parent{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:20}
+.panel h1{font-size:2rem;margin:0 0 6px;font-weight:700}
+.panel h2{font-size:1.3rem;margin:0 0 10px;font-weight:600}
+.panel p{line-height:1.5;color:var(--soft);margin:0 0 12px}
+.sec{background:var(--card);border-radius:24px;padding:20px;margin-top:18px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.code{flex:1;min-width:0;background:var(--bg);border-radius:12px;padding:12px;font-size:.95rem;word-break:break-all}
+.field{flex:1;min-width:200px;font:inherit;font-size:1rem;padding:12px 14px;border-radius:14px;border:2px solid var(--fieldLine);background:var(--fieldBg);color:var(--ink)}
+.btn{background:var(--solid);color:#fff;padding:12px 18px;border-radius:14px;font-weight:600}
+.btn.pink{background:var(--pink)}
+.btn.ghost{background:var(--bg);color:var(--ink)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;gap:12px;padding:8px;border-radius:16px;background:var(--bg)}
+.item img,.item .noimg{width:48px;height:48px;border-radius:10px;object-fit:cover;flex:none;background:var(--press)}
+.item .nm{flex:1;min-width:0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .btn{padding:8px 14px}
+.item.on{outline:3px solid var(--teal)}
+.dev{width:100%;text-align:left}
+.dev.on{outline:3px solid var(--teal)}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.item .field{min-width:120px}
+
+/* Bilde/ikon som kan trykkes på for å endres */
+.thumb{position:relative;width:56px;height:56px;border-radius:12px;flex:none;overflow:hidden;background:var(--press);
+  display:grid;place-items:center;font-size:30px}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;max-width:none;border-radius:0;object-fit:cover}
+.thumb::after{content:"✎";position:absolute;right:3px;bottom:3px;width:20px;height:20px;border-radius:50%;
+  background:var(--pink);color:#fff;font-size:12px;display:grid;place-items:center}
+.songList{display:flex;flex-direction:column;gap:6px;margin:0 0 8px 34px}
+.songList .item{padding:6px}
+.songList .thumb{width:48px;height:48px;font-size:26px}
+
+/* Velger for ikon og bilde */
+#picker{position:fixed;inset:0;z-index:30;background:rgba(5,3,12,.55);display:flex;align-items:flex-end;justify-content:center}
+#picker[hidden]{display:none}
+.sheet{background:var(--card);width:min(640px,100%);max-height:92vh;overflow-y:auto;border-radius:28px 28px 0 0;
+  padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));animation:up .18s ease-out}
+.sheet h2{font-size:1.3rem;margin:0;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet h3{font-size:1rem;margin:18px 0 8px;font-weight:600;color:var(--soft)}
+.preview{width:132px;height:132px;border-radius:24px;margin:18px auto 0;overflow:hidden;background:var(--press);
+  display:grid;place-items:center;font-size:72px}
+.preview{position:relative}
+.preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.emojis{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px}
+.emojis button{font-size:30px;height:52px;border-radius:14px;background:var(--bg)}
+.emojis button.on{outline:3px solid var(--pink)}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.colors button{width:46px;height:46px;border-radius:50%;border:4px solid transparent}
+.colors button.on{border-color:var(--ink)}
+</style>
+</head>
+<body>
+
+<!-- Oppsett -->
+<section id="setup" class="panel" hidden>
+  <h1>Sett opp musikkappen</h1>
+  <p>Dette gjør du bare én gang. Etterpå er det bare å trykke på musikken.</p>
+  <div class="sec">
+    <h2>Adresse til Spotify</h2>
+    <p>Lim inn denne som «Redirect URI» når du lager appen på developer.spotify.com.</p>
+    <div class="row"><div class="code" id="redir"></div><button class="btn ghost" id="copy">Kopier</button></div>
+  </div>
+  <div class="sec">
+    <h2>Client ID</h2>
+    <p>Finnes på siden til appen din i Spotify-dashbordet.</p>
+    <div class="row"><input class="field" id="cid" placeholder="Lim inn Client ID" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+  </div>
+  <div class="sec">
+    <button class="btn pink" id="login">Logg inn med Spotify</button>
+  </div>
+</section>
+
+<!-- Barnevisning -->
+<main id="kid" hidden>
+  <div class="top">
+    <h1 class="hello" id="hello">MUSIKK</h1>
+    <button class="gear" id="gear" aria-label="Voksenmodus: hold inne">⚙️</button>
+  </div>
+  <div class="grid" id="grid"></div>
+  <section id="songs" hidden>
+    <div class="songsTop"><button class="close" id="closeSongs" aria-label="Tilbake til hjem"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="grid" id="songGrid"></div>
+  </section>
+  <div class="bar">
+    <div class="ctrls">
+      <button class="cbtn" id="prev" aria-label="Forrige"><svg viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="cbtn big" id="toggle" aria-label="Spill eller pause"></button>
+      <button class="cbtn" id="next" aria-label="Neste"><svg viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM4 5l11 7-11 7z"/></svg></button>
+    </div>
+  </div>
+</main>
+
+<!-- Voksenmodus -->
+<section id="parent" hidden>
+  <div class="panel">
+    <div class="head"><h1>Voksenmodus</h1><button class="btn pink" id="done">Ferdig</button></div>
+
+    <div class="sec">
+      <div class="head"><h2>Hvor skal musikken spilles?</h2><button class="btn ghost" id="refreshDev">Søk igjen</button></div>
+      <p>Ser du ikke iPaden? Åpne Spotify-appen på den en liten stund, og trykk «Søk igjen».</p>
+      <div class="list" id="devs"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Høyeste volum</h2>
+      <div class="row"><input type="range" id="maxVol" min="10" max="100" step="5" style="flex:1"><b id="maxVolLbl"></b></div>
+    </div>
+
+    <div class="sec">
+      <h2>Utseende</h2>
+      <div class="row seg" id="theme">
+        <button class="btn ghost" data-theme="dark">🌙 Mørk</button>
+        <button class="btn ghost" data-theme="light">☀️ Lys</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Musikken som vises</h2>
+      <div class="list" id="chosen"></div>
+    </div>
+
+    <div class="sec">
+      <h2>Legg til fra lenke</h2>
+      <p>I Spotify: Del → Kopier lenke. Fungerer for album, spillelister, artister og sanger.</p>
+      <div class="row"><input class="field" id="link" placeholder="https://open.spotify.com/album/…" autocapitalize="off" spellcheck="false"><button class="btn" id="addLink">Legg til</button></div>
+    </div>
+
+    <div class="sec">
+      <h2>Dine spillelister</h2>
+      <div class="list" id="pls"><p>Henter…</p></div>
+    </div>
+
+    <div class="sec"><button class="btn ghost" id="logout">Logg ut av Spotify</button></div>
+  </div>
+</section>
+
+<!-- Velger for ikon eller eget bilde -->
+<div id="picker" hidden>
+  <div class="sheet">
+    <div class="head"><h2 id="pickTitle"></h2><button class="btn pink" id="pickDone">Ferdig</button></div>
+    <div class="preview" id="pickPrev"></div>
+    <h3>Eget bilde</h3>
+    <div class="row">
+      <button class="btn" id="pickUpload">📷 Last opp bilde</button>
+      <button class="btn ghost" id="pickReset"></button>
+      <input type="file" accept="image/*" id="upload" hidden>
+    </div>
+    <h3>Eller velg et ikon</h3>
+    <div class="emojis" id="emojis"></div>
+    <h3>Bakgrunnsfarge</h3>
+    <div class="colors" id="colors"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative';
+const K={cid:'mk.clientId',tok:'mk.tokens',items:'mk.items',dev:'mk.device',vol:'mk.maxVol',ver:'mk.verifier',theme:'mk.theme',art:'mk.art'};
+const REDIRECT=location.origin+location.pathname.replace(/index\.html$/,'');
+const MAX_ITEMS=9;
+const COLORS=['#FFD84D','#7DD3FC','#A7F3D0','#FDA4AF','#C4B5FD','#FDBA74'];
+const ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>';
+const ICON_PAUSE='<svg viewBox="0 0 24 24"><path d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></svg>';
+
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+  del(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function img(src,cls){if(!src)return el('div',cls==='art'?'ph':'noimg');const i=new Image();i.src=src;i.alt='';i.className=cls||'';return i}
+
+/* ---------- Egne ikoner og bilder ---------- */
+// Lagres per Spotify-adresse, så en sang får samme bilde i alle spillelister
+const EMOJIS=['🐻','🦊','🐺','🐰','🐸','🐵','🐶','🐱','🦁','🐷','🐮','🐘','🦄','🐲','🐳','🐠','🦋','🐞',
+  '🌈','⭐','🌙','☀️','🌸','🍓','🍌','🎂','🎈','🚗','🚌','🚂','🚀','🏴‍☠️','🏰','🎸','🎻','🥁','🎺','🎹','🎤','💃','🧸','❤️','💛','🎵'];
+const ART_COLORS=['#FFD84D','#7DD3FC','#A7F3D0','#FDA4AF','#C4B5FD','#FDBA74','#A5B4FC','#BBF7D0','#FCA5A5'];
+let ART=store.get(K.art,{});
+function saveArt(uri,v){
+  const next=Object.assign({},ART);
+  if(v) next[uri]=v; else delete next[uri];
+  try{localStorage.setItem(K.art,JSON.stringify(next))}
+  catch(e){toast('Det er ikke plass til flere bilder. Bruk ikoner på noen av dem.');return false}
+  ART=next;return true;
+}
+// Lager bilde-elementet: eget bilde, så eget ikon, så Spotify-bildet, ellers en note
+function artEl(it,i,big){
+  const c=ART[it.uri];
+  const src=c&&c.image||(!c&&it.image);
+  if(src) return img(src,big?'art':'');
+  const p=el('div',big?'ph':'phs',(c&&c.emoji)||'🎵');
+  p.style.background=(c&&c.color)||COLORS[i%COLORS.length];
+  return p;
+}
+function thumb(it,i){
+  const b=el('button','thumb');b.setAttribute('aria-label','Endre bilde for '+it.name);
+  b.refresh=()=>{
+    b.textContent='';b.style.background='';
+    const a=artEl(it,i,false);
+    if(a.tagName==='IMG') b.appendChild(a); else{b.textContent=a.textContent;b.style.background=a.style.background}
+  };
+  b.refresh();b.onclick=()=>openPicker(it,i,b);
+  return b;
+}
+// Krymper bildet før det lagres, så det får plass på iPaden
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+    const s=Math.min(1,400/Math.max(im.width,im.height));
+    const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',.78);
+  }finally{URL.revokeObjectURL(url)}
+}
+let pick=null;
+function openPicker(it,i,btn){
+  pick={it,i,btn};
+  $('pickTitle').textContent=it.name;
+  $('pickReset').textContent=it.image?'Bruk Spotify-bildet':'Fjern eget bilde';
+  $('picker').hidden=false;
+  renderPicker();
+}
+function renderPicker(){
+  const {it,i}=pick, c=ART[it.uri]||{};
+  const pv=$('pickPrev');pv.textContent='';pv.style.background='';
+  const a=artEl(it,i,false);
+  if(a.tagName==='IMG') pv.appendChild(a); else{pv.textContent=a.textContent;pv.style.background=a.style.background}
+  const curEmoji=c.emoji||'', curColor=c.color||COLORS[i%COLORS.length];
+  const em=$('emojis');em.textContent='';
+  EMOJIS.forEach(e=>{const b=el('button',e===curEmoji?'on':'',e);b.onclick=()=>setPick({emoji:e,color:curColor});em.appendChild(b)});
+  const co=$('colors');co.textContent='';
+  ART_COLORS.forEach(col=>{
+    const b=el('button',c.emoji&&col===curColor?'on':'');b.style.background=col;b.setAttribute('aria-label','Farge');
+    b.onclick=()=>setPick({emoji:curEmoji||'🎵',color:col});co.appendChild(b);
+  });
+}
+function setPick(v){if(saveArt(pick.it.uri,v)){pick.btn.refresh();renderPicker()}}
+function closePicker(){$('picker').hidden=true;pick=null}
+$('pickDone').onclick=closePicker;
+$('picker').onclick=e=>{if(e.target===$('picker')) closePicker()};
+$('pickReset').onclick=()=>setPick(null);
+$('pickUpload').onclick=()=>$('upload').click();
+$('upload').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f||!pick) return;
+  try{setPick({image:await shrink(f)})}catch(err){toast('Klarte ikke å lese bildet.')}
+};
+
+/* ---------- Utseende (mørk er standard) ---------- */
+function applyTheme(t){
+  document.documentElement.dataset.theme=t;
+  document.querySelector('meta[name=theme-color]').content=t==='dark'?'#17112B':'#EEE8FF';
+  document.querySelectorAll('#theme .btn').forEach(b=>b.classList.toggle('on',b.dataset.theme===t));
+}
+applyTheme(store.get(K.theme,'dark'));
+document.querySelectorAll('#theme .btn').forEach(b=>b.onclick=()=>{store.set(K.theme,b.dataset.theme);applyTheme(b.dataset.theme)});
+
+let toastT;
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,4000)}
+
+/* ---------- Innlogging (PKCE, ingen server trengs) ---------- */
+function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function login(){
+  const cid=$('cid').value.trim();
+  if(!cid) return toast('Lim inn Client ID først.');
+  store.set(K.cid,cid);
+  const v=b64url(crypto.getRandomValues(new Uint8Array(48)));
+  store.set(K.ver,v);
+  const ch=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+  const p=new URLSearchParams({response_type:'code',client_id:cid,scope:SCOPES,code_challenge_method:'S256',code_challenge:ch,redirect_uri:REDIRECT});
+  location.href='https://accounts.spotify.com/authorize?'+p;
+}
+async function tokenRequest(params){
+  const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(params)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error_description||j.error||'Innloggingen feilet');
+  const old=store.get(K.tok,{})||{};
+  const t={access:j.access_token,refresh:j.refresh_token||old.refresh,expires:Date.now()+(j.expires_in-60)*1000};
+  store.set(K.tok,t);return t;
+}
+async function handleCallback(){
+  const q=new URLSearchParams(location.search);
+  if(!q.has('code')&&!q.has('error')) return;
+  history.replaceState(null,'',REDIRECT);
+  if(q.get('error')) throw new Error('Innloggingen ble avbrutt ('+q.get('error')+').');
+  await tokenRequest({grant_type:'authorization_code',code:q.get('code'),redirect_uri:REDIRECT,client_id:store.get(K.cid,''),code_verifier:store.get(K.ver,'')});
+  store.del(K.ver);
+}
+function authError(){const e=new Error('Logg inn på nytt');e.auth=true;return e}
+let refreshing=null;
+async function accessToken(force){
+  const t=store.get(K.tok,null);
+  if(!t||!t.access) throw authError();
+  if(!force&&Date.now()<t.expires) return t.access;
+  if(!refreshing){
+    refreshing=tokenRequest({grant_type:'refresh_token',refresh_token:t.refresh,client_id:store.get(K.cid,'')})
+      .catch(()=>{store.del(K.tok);throw authError()})
+      .finally(()=>{refreshing=null});
+  }
+  return (await refreshing).access;
+}
+async function api(path,opts={},retry=true){
+  const tok=await accessToken();
+  const headers={Authorization:'Bearer '+tok};
+  if(opts.body) headers['Content-Type']='application/json';
+  const r=await fetch('https://api.spotify.com/v1'+path,{...opts,headers});
+  if(r.status===401&&retry){await accessToken(true);return api(path,opts,false)}
+  if(r.status===204) return null;
+  const txt=await r.text();let j=null;try{j=txt?JSON.parse(txt):null}catch(e){}
+  if(!r.ok){const e=new Error((j&&j.error&&j.error.message)||('Feil '+r.status));e.status=r.status;throw e}
+  return j;
+}
+function handleErr(e){
+  if(e.auth){toast('Logg inn på nytt.');return showSetup()}
+  if(e.status===404) return toast('Finner ingen avspilling. Åpne Spotify-appen et øyeblikk og prøv igjen.');
+  if(e.status===403) return toast('Spotify tillot ikke dette akkurat nå.');
+  if(e.status===429) return toast('Litt for mange trykk. Vent et par sekunder.');
+  toast(e.message||'Noe gikk galt.');
+}
+
+/* ---------- Avspilling ---------- */
+let state=null;
+const maxVol=()=>store.get(K.vol,70);
+
+async function getDevices(){const j=await api('/me/player/devices');return (j&&j.devices)||[]}
+async function pickDevice(){
+  const ds=await getDevices();const saved=store.get(K.dev,null)||{};
+  const d=ds.find(x=>x.id===saved.id)||ds.find(x=>saved.name&&x.name===saved.name)||ds.find(x=>x.is_active)||ds[0];
+  return d?d.id:null;
+}
+async function playItem(it,startAt){
+  try{
+    const dev=await pickDevice();
+    if(!dev) return toast('Finner ikke høyttaleren. Åpne Spotify-appen et øyeblikk, og prøv igjen.');
+    const body=it.uri.includes(':track:')?{uris:[it.uri]}:{context_uri:it.uri};
+    if(startAt) body.offset={uri:startAt};
+    await api('/me/player/play?device_id='+encodeURIComponent(dev),{method:'PUT',body:JSON.stringify(body)});
+    state=Object.assign(state||{},{is_playing:true,context:{uri:it.uri}},startAt?{item:{uri:startAt}}:{});
+    renderNow();setTimeout(poll,900);
+  }catch(e){handleErr(e)}
+}
+async function toggle(){
+  try{
+    if(state&&state.is_playing){
+      state.is_playing=false;renderNow();
+      await api('/me/player/pause',{method:'PUT'});
+    }else{
+      const dev=state&&state.device?state.device.id:await pickDevice();
+      if(!dev) return toast('Trykk på noe musikk først.');
+      if(state) state.is_playing=true;renderNow();
+      await api('/me/player/play?device_id='+encodeURIComponent(dev),{method:'PUT'});
+    }
+    setTimeout(poll,700);
+  }catch(e){handleErr(e);poll()}
+}
+async function skip(dir){try{await api('/me/player/'+dir,{method:'POST'});setTimeout(poll,700)}catch(e){handleErr(e)}}
+let volT;
+function setVol(v){
+  clearTimeout(volT);
+  volT=setTimeout(()=>api('/me/player/volume?volume_percent='+Math.min(v,maxVol()),{method:'PUT'}).catch(()=>{}),250);
+}
+async function poll(){
+  if(document.hidden||$('kid').hidden||!store.get(K.tok,null)) return;
+  try{
+    state=await api('/me/player');
+    renderNow();
+    const d=state&&state.device;
+    if(d&&d.supports_volume!==false&&d.volume_percent>maxVol()) setVol(maxVol());
+  }catch(e){if(e.auth) handleErr(e)}
+}
+
+/* ---------- Tegning av barnevisning ---------- */
+function renderGrid(){
+  const g=$('grid');g.textContent='';
+  const items=store.get(K.items,[]);
+  if(!items.length){
+    g.appendChild(el('p','empty','Her er det ingen musikk ennå. En voksen kan holde inne tannhjulet for å velge.'));
+    return;
+  }
+  items.slice(0,MAX_ITEMS).forEach((it,i)=>{
+    // Spillelister og album åpner sangvinduet; artister og enkeltsanger spilles med en gang
+    const opens=/:(playlist|album):/.test(it.uri);
+    g.appendChild(tile(it,i,opens?'Åpne '+it.name:'Spill '+it.name,()=>opens?openSongs(it):playItem(it)));
+  });
+  renderNow();
+}
+function tile(it,i,label,onclick){
+  const b=el('button','tile');b.dataset.uri=it.uri;b.setAttribute('aria-label',label);
+  b.appendChild(artEl(it,i,true));
+  b.appendChild(el('div','name',it.name));
+  b.onclick=onclick;
+  return b;
+}
+
+/* ---------- Sangvindu ---------- */
+const songCache={};
+async function fetchSongs(it){
+  if(songCache[it.uri]) return songCache[it.uri];
+  const [,type,id]=it.uri.split(':');
+  let list=[];
+  if(type==='album'){
+    const j=await api(`/albums/${id}/tracks?limit=${MAX_ITEMS}`);
+    list=(j.items||[]).map(t=>({uri:t.uri,name:t.name,image:it.image}));
+  }else{
+    // Spotify har byttet navn på dette endepunktet; prøv det nye først
+    let j;
+    try{j=await api(`/playlists/${id}/items?limit=${MAX_ITEMS}`)}
+    catch(e){if(e.auth) throw e;j=await api(`/playlists/${id}/tracks?limit=${MAX_ITEMS}`)}
+    list=(j.items||[]).map(x=>x&&(x.item||x.track)).filter(t=>t&&t.uri&&t.uri.includes(':track:')).map(t=>{
+      const ims=(t.album&&t.album.images)||[];
+      return {uri:t.uri,name:t.name,image:ims[0]?ims[0].url:''};
+    });
+  }
+  return songCache[it.uri]=list.slice(0,MAX_ITEMS);
+}
+let openList=null;
+async function openSongs(it){
+  openList=it;
+  const g=$('songGrid');g.textContent='';
+  g.appendChild(el('p','empty','Henter sanger…'));
+  $('songs').hidden=false;
+  try{
+    const songs=await fetchSongs(it);
+    if(openList!==it) return;
+    g.textContent='';
+    if(!songs.length){g.appendChild(el('p','empty','Fant ingen sanger her.'));return}
+    songs.forEach((s,i)=>g.appendChild(tile(s,i,'Spill '+s.name,()=>playItem(it,s.uri))));
+    renderNow();
+  }catch(e){g.textContent='';closeSongs();handleErr(e)}
+}
+function closeSongs(){openList=null;$('songs').hidden=true}
+function renderNow(){
+  $('toggle').innerHTML=state&&state.is_playing?ICON_PAUSE:ICON_PLAY;
+  const ctx=state&&state.context&&state.context.uri, cur=state&&state.item&&state.item.uri;
+  document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('playing',!!(state&&(t.dataset.uri===ctx||t.dataset.uri===cur))));
+}
+
+/* ---------- Voksenmodus ---------- */
+async function openParent(){
+  $('parent').hidden=false;
+  $('maxVol').value=maxVol();$('maxVolLbl').textContent=maxVol()+' %';
+  renderChosen();loadDevices();loadPlaylists();
+}
+function closeParent(){
+  $('parent').hidden=true;renderGrid();poll();
+}
+function renderChosen(){
+  const c=$('chosen');c.textContent='';
+  const items=store.get(K.items,[]);
+  if(!items.length){c.appendChild(el('p',null,'Ingenting valgt ennå. Legg til fra listen eller en lenke under.'));return}
+  items.forEach((it,i)=>{
+    const r=el('div','item');r.appendChild(thumb(it,i));
+    // Navnet kan endres, slik at ruta får den tittelen du vil
+    const nm=el('input','nm field');nm.value=it.name;nm.setAttribute('aria-label','Tittel');
+    nm.onchange=()=>{const a=store.get(K.items,[]);const z=a.find(q=>q.uri===it.uri);if(z){z.name=nm.value.trim()||z.name;store.set(K.items,a)}};
+    r.appendChild(nm);
+    // Spillelister og album kan foldes ut for å endre bildene på sangene
+    let songBox=null;
+    if(/:(playlist|album):/.test(it.uri)){
+      songBox=el('div','songList');songBox.hidden=!expanded.has(it.uri);
+      const sb=el('button','btn ghost',songBox.hidden?'Sanger ▾':'Sanger ▴');
+      sb.onclick=()=>{
+        songBox.hidden=!songBox.hidden;sb.textContent=songBox.hidden?'Sanger ▾':'Sanger ▴';
+        if(songBox.hidden) expanded.delete(it.uri); else{expanded.add(it.uri);renderSongList(it,songBox)}
+      };
+      r.appendChild(sb);
+      if(!songBox.hidden) renderSongList(it,songBox);
+    }
+    if(i>0){const up=el('button','btn ghost','↑');up.setAttribute('aria-label','Flytt opp');up.onclick=()=>{const a=store.get(K.items,[]);[a[i-1],a[i]]=[a[i],a[i-1]];store.set(K.items,a);renderChosen()};r.appendChild(up)}
+    const x=el('button','btn ghost','Fjern');x.onclick=()=>{store.set(K.items,store.get(K.items,[]).filter(z=>z.uri!==it.uri));renderChosen();markPlaylists()};
+    r.appendChild(x);c.appendChild(r);
+    if(songBox) c.appendChild(songBox);
+  });
+}
+const expanded=new Set();
+async function renderSongList(it,box){
+  box.textContent='';box.appendChild(el('p',null,'Henter sanger…'));
+  try{
+    const songs=await fetchSongs(it);
+    box.textContent='';
+    if(!songs.length){box.appendChild(el('p',null,'Fant ingen sanger.'));return}
+    songs.forEach((s,i)=>{
+      const r=el('div','item');r.appendChild(thumb(s,i));r.appendChild(el('div','nm',s.name));box.appendChild(r);
+    });
+  }catch(e){box.textContent='';handleErr(e)}
+}
+function addItem(it){
+  const a=store.get(K.items,[]);
+  if(a.some(z=>z.uri===it.uri)) return toast('Den er allerede lagt til.');
+  if(a.length>=MAX_ITEMS) return toast('Det er plass til '+MAX_ITEMS+'. Fjern en først.');
+  a.push(it);store.set(K.items,a);renderChosen();markPlaylists();
+}
+async function loadDevices(){
+  const box=$('devs');box.textContent='';
+  try{
+    const ds=await getDevices();const saved=store.get(K.dev,null)||{};
+    if(!ds.length){box.appendChild(el('p',null,'Fant ingen enheter. Åpne Spotify på høyttaleren eller iPaden og prøv igjen.'));return}
+    ds.forEach(d=>{
+      const b=el('button','item dev'+((d.id===saved.id||d.name===saved.name)?' on':''));
+      b.appendChild(el('div','nm',d.name+'  ('+d.type.toLowerCase()+')'));
+      b.onclick=()=>{store.set(K.dev,{id:d.id,name:d.name});loadDevices()};
+      box.appendChild(b);
+    });
+  }catch(e){handleErr(e)}
+}
+let playlists=[];
+async function loadPlaylists(){
+  const box=$('pls');
+  try{
+    let out=[],url='/me/playlists?limit=50';
+    while(url&&out.length<300){const j=await api(url);out=out.concat((j.items||[]).filter(Boolean));url=j.next?j.next.replace('https://api.spotify.com/v1',''):null}
+    playlists=out;box.textContent='';
+    if(!out.length){box.appendChild(el('p',null,'Fant ingen spillelister på kontoen.'));return}
+    out.forEach(p=>{
+      const image=p.images&&p.images[0]?p.images[0].url:'';
+      const r=el('div','item');r.dataset.uri=p.uri;
+      r.appendChild(img(image));r.appendChild(el('div','nm',p.name));
+      const b=el('button','btn');b.onclick=()=>{
+        const a=store.get(K.items,[]);
+        if(a.some(z=>z.uri===p.uri)){store.set(K.items,a.filter(z=>z.uri!==p.uri));renderChosen();markPlaylists()}
+        else addItem({uri:p.uri,name:p.name,image});
+      };
+      r.appendChild(b);box.appendChild(r);
+    });
+    markPlaylists();
+  }catch(e){box.textContent='';handleErr(e)}
+}
+function markPlaylists(){
+  const chosen=new Set(store.get(K.items,[]).map(z=>z.uri));
+  document.querySelectorAll('#pls .item').forEach(r=>{
+    const on=chosen.has(r.dataset.uri);r.classList.toggle('on',on);
+    r.querySelector('.btn').textContent=on?'Valgt ✓':'Legg til';
+  });
+}
+async function addFromLink(){
+  const m=$('link').value.match(/(playlist|album|artist|track)[\/:]([A-Za-z0-9]{22})/);
+  if(!m) return toast('Fant ingen Spotify-lenke der. Bruk Del → Kopier lenke i Spotify.');
+  const [,type,id]=m, uri=`spotify:${type}:${id}`;
+  const labels={playlist:'Spilleliste',album:'Album',artist:'Artist',track:'Sang'};
+  let name=labels[type],image='';
+  try{
+    const j=await api(`/${type}s/${id}`);
+    name=j.name||name;
+    const ims=j.images||(j.album&&j.album.images)||[];
+    image=ims[0]?ims[0].url:'';
+  }catch(e){if(e.auth) return handleErr(e)}
+  addItem({uri,name,image});$('link').value='';
+}
+
+/* ---------- Skjermbytte og knapper ---------- */
+function showSetup(){
+  $('kid').hidden=true;$('parent').hidden=true;$('setup').hidden=false;
+  $('redir').textContent=REDIRECT;$('cid').value=store.get(K.cid,'');
+}
+function showKid(){$('setup').hidden=true;$('kid').hidden=false;renderGrid();poll()}
+
+$('copy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(REDIRECT).then(()=>toast('Kopiert.'),()=>{})};
+$('login').onclick=login;
+$('toggle').onclick=toggle;
+$('closeSongs').onclick=closeSongs;
+$('prev').onclick=()=>skip('previous');
+$('next').onclick=()=>skip('next');
+$('done').onclick=closeParent;
+$('refreshDev').onclick=loadDevices;
+$('addLink').onclick=addFromLink;
+$('maxVol').oninput=e=>{store.set(K.vol,+e.target.value);$('maxVolLbl').textContent=e.target.value+' %'};
+$('logout').onclick=()=>{store.del(K.tok);state=null;showSetup()};
+
+// Voksenmodus åpnes bare ved å holde inne tannhjulet
+const gear=$('gear');let holdT=null;
+gear.addEventListener('pointerdown',e=>{e.preventDefault();gear.classList.add('holding');holdT=setTimeout(()=>{gear.classList.remove('holding');holdT=null;openParent()},1400)});
+['pointerup','pointerleave','pointercancel'].forEach(ev=>gear.addEventListener(ev,()=>{
+  if(holdT){clearTimeout(holdT);holdT=null;if(ev==='pointerup')toast('Hold inne for voksenmodus.')}
+  gear.classList.remove('holding');
+}));
+gear.addEventListener('contextmenu',e=>e.preventDefault());
+
+setInterval(poll,4000);
+document.addEventListener('visibilitychange',poll);
+
+(async function init(){
+  try{await handleCallback()}catch(e){toast(e.message)}
+  if(!store.get(K.cid,'')||!store.get(K.tok,null)) showSetup(); else showKid();
+})();
+</script>
+</body>
+</html>
