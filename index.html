@@ -26,8 +26,10 @@
 .seg .btn.on{background:var(--pink);color:#fff}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-tap-highlight-color:transparent}
-body{padding-top:env(safe-area-inset-top,0px);-webkit-user-select:none;user-select:none}
-button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+body{padding-top:env(safe-area-inset-top,0px);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+/* Hindrer at Safari forstørrer bildene (forhåndsvisning) når man holder fingeren på en knapp */
+#kid img,#parent img,#picker img{pointer-events:none;-webkit-user-drag:none;-webkit-touch-callout:none}
 button:focus-visible,input:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 [hidden]{display:none!important}
 img{max-width:100%;display:block}
@@ -141,6 +143,8 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
 <section id="setup" class="panel" hidden>
   <h1>Sett opp musikkappen</h1>
   <p>Dette gjør du bare én gang. Etterpå er det bare å trykke på musikken.</p>
+  <p id="easyInfo" hidden>Logg inn med Spotify-kontoen din. Du trenger Spotify Premium, og kontoen må være lagt til av den som har laget appen.</p>
+  <div id="own">
   <div class="sec">
     <h2>Adresse til Spotify</h2>
     <p>Lim inn denne som «Redirect URI» når du lager appen på developer.spotify.com.</p>
@@ -151,8 +155,12 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
     <p>Finnes på siden til appen din i Spotify-dashbordet.</p>
     <div class="row"><input class="field" id="cid" placeholder="Lim inn Client ID" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
+  </div>
   <div class="sec">
-    <button class="btn pink" id="login">Logg inn med Spotify</button>
+    <div class="row">
+      <button class="btn pink" id="login">Logg inn med Spotify</button>
+      <button class="btn ghost" id="useOwn" hidden>Bruk egen Spotify-app</button>
+    </div>
   </div>
 </section>
 
@@ -201,6 +209,15 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
     </div>
 
     <div class="sec">
+      <h2>Når en sang er ferdig</h2>
+      <div class="row seg" id="stopMode">
+        <button class="btn ghost" data-stop="1">⏹ Stopp</button>
+        <button class="btn ghost" data-stop="0">⏭ Spill videre</button>
+      </div>
+      <p style="margin-top:12px">Slå også av «Autoavspilling» i innstillingene i Spotify-appen, så Spotify ikke finner på å spille noe annet.</p>
+    </div>
+
+    <div class="sec">
       <h2>Musikken som vises</h2>
       <div class="list" id="chosen"></div>
     </div>
@@ -242,8 +259,10 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
 
 <script>
 const SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative';
-const K={cid:'mk.clientId',tok:'mk.tokens',items:'mk.items',dev:'mk.device',vol:'mk.maxVol',ver:'mk.verifier',theme:'mk.theme',art:'mk.art'};
+const K={cid:'mk.clientId',tok:'mk.tokens',items:'mk.items',dev:'mk.device',vol:'mk.maxVol',ver:'mk.verifier',theme:'mk.theme',art:'mk.art',stop:'mk.stopAfter'};
 const REDIRECT=location.origin+location.pathname.replace(/index\.html$/,'');
+// Client ID fra Spotify-dashbordet. Brukes av alle som ikke har sin egen Spotify-app.
+const CLIENT_ID='';
 const MAX_ITEMS=9;
 const COLORS=['#FFD84D','#7DD3FC','#A7F3D0','#FDA4AF','#C4B5FD','#FDBA74'];
 const ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>';
@@ -344,13 +363,19 @@ function applyTheme(t){
 applyTheme(store.get(K.theme,'dark'));
 document.querySelectorAll('#theme .btn').forEach(b=>b.onclick=()=>{store.set(K.theme,b.dataset.theme);applyTheme(b.dataset.theme)});
 
+/* ---------- Stopp etter hver sang (på som standard) ---------- */
+function markStop(){const on=store.get(K.stop,true);document.querySelectorAll('#stopMode .btn').forEach(b=>b.classList.toggle('on',(b.dataset.stop==='1')===on))}
+document.querySelectorAll('#stopMode .btn').forEach(b=>b.onclick=()=>{store.set(K.stop,b.dataset.stop==='1');markStop()});
+markStop();
+
 let toastT;
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,4000)}
 
 /* ---------- Innlogging (PKCE, ingen server trengs) ---------- */
 function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function login(){
-  const cid=$('cid').value.trim();
+  // Egen Client ID hvis feltet er synlig og fylt ut, ellers den innebygde
+  const cid=(!$('own').hidden&&$('cid').value.trim())||CLIENT_ID;
   if(!cid) return toast('Lim inn Client ID først.');
   store.set(K.cid,cid);
   const v=b64url(crypto.getRandomValues(new Uint8Array(48)));
@@ -412,18 +437,44 @@ let state=null;
 const maxVol=()=>store.get(K.vol,70);
 
 async function getDevices(){const j=await api('/me/player/devices');return (j&&j.devices)||[]}
+// Spiller aldri på en annen enhet enn den som er valgt, uten å si fra
 async function pickDevice(){
-  const ds=await getDevices();const saved=store.get(K.dev,null)||{};
-  const d=ds.find(x=>x.id===saved.id)||ds.find(x=>saved.name&&x.name===saved.name)||ds.find(x=>x.is_active)||ds[0];
-  return d?d.id:null;
+  const ds=await getDevices();const saved=store.get(K.dev,null);
+  if(saved&&(saved.id||saved.name)){
+    const d=ds.find(x=>x.id===saved.id)||ds.find(x=>saved.name&&x.name===saved.name);
+    if(d) return d.id;
+    toast(`Finner ikke «${saved.name||'enheten'}». Åpne Spotify-appen på den et øyeblikk, og prøv igjen.`);
+    return null;
+  }
+  // Ingen enhet valgt ennå: bruk den eneste som finnes, og si hvilken det er
+  if(ds.length===1){
+    store.set(K.dev,{id:ds[0].id,name:ds[0].name});
+    toast(`Spiller på «${ds[0].name}». Kan endres i voksenmodus.`);
+    return ds[0].id;
+  }
+  toast(ds.length?'Velg hvor musikken skal spilles i voksenmodus (hold inne tannhjulet).'
+    :'Finner ingen steder å spille musikken. Åpne Spotify-appen et øyeblikk, og prøv igjen.');
+  return null;
 }
+// Stopp etter hver sang (standard): bare den valgte sangen sendes til Spotify,
+// så avspillingen stopper av seg selv når sangen er ferdig.
+const stopAfter=()=>store.get(K.stop,true);
+let nowList=null; // {from: spilleliste-adresse, songs: [...], uri: sangen som spilles}
 async function playItem(it,startAt){
   try{
     const dev=await pickDevice();
-    if(!dev) return toast('Finner ikke høyttaleren. Åpne Spotify-appen et øyeblikk, og prøv igjen.');
-    const body=it.uri.includes(':track:')?{uris:[it.uri]}:{context_uri:it.uri};
-    if(startAt) body.offset={uri:startAt};
+    if(!dev) return;
+    let body;
+    if(startAt&&stopAfter()){
+      body={uris:[startAt]};
+      nowList={from:it.uri,songs:songCache[it.uri]||[],uri:startAt};
+    }else{
+      body=it.uri.includes(':track:')?{uris:[it.uri]}:{context_uri:it.uri};
+      if(startAt) body.offset={uri:startAt};
+      nowList=null;
+    }
     await api('/me/player/play?device_id='+encodeURIComponent(dev),{method:'PUT',body:JSON.stringify(body)});
+    if(stopAfter()) api('/me/player/repeat?state=off&device_id='+encodeURIComponent(dev),{method:'PUT'}).catch(()=>{});
     state=Object.assign(state||{},{is_playing:true,context:{uri:it.uri}},startAt?{item:{uri:startAt}}:{});
     renderNow();setTimeout(poll,900);
   }catch(e){handleErr(e)}
@@ -434,15 +485,23 @@ async function toggle(){
       state.is_playing=false;renderNow();
       await api('/me/player/pause',{method:'PUT'});
     }else{
-      const dev=state&&state.device?state.device.id:await pickDevice();
-      if(!dev) return toast('Trykk på noe musikk først.');
+      const dev=await pickDevice();
+      if(!dev) return renderNow();
       if(state) state.is_playing=true;renderNow();
       await api('/me/player/play?device_id='+encodeURIComponent(dev),{method:'PUT'});
     }
     setTimeout(poll,700);
   }catch(e){handleErr(e);poll()}
 }
-async function skip(dir){try{await api('/me/player/'+dir,{method:'POST'});setTimeout(poll,700)}catch(e){handleErr(e)}}
+async function skip(dir){
+  // Når én og én sang spilles, finner appen selv neste eller forrige sang i lista
+  if(stopAfter()&&nowList&&nowList.songs.length){
+    const s=nowList.songs, i=s.findIndex(x=>x.uri===nowList.uri);
+    const j=Math.max(0,Math.min(s.length-1,i+(dir==='next'?1:-1)));
+    return playItem({uri:nowList.from},s[j].uri);
+  }
+  try{await api('/me/player/'+dir,{method:'POST'});setTimeout(poll,700)}catch(e){handleErr(e)}
+}
 let volT;
 function setVol(v){
   clearTimeout(volT);
@@ -452,6 +511,12 @@ async function poll(){
   if(document.hidden||$('kid').hidden||!store.get(K.tok,null)) return;
   try{
     state=await api('/me/player');
+    // Sikkerhetsnett: starter Spotify en annen sang av seg selv (f.eks. Autoavspilling), pauses den
+    const cur=state&&state.item&&state.item.uri;
+    if(nowList&&cur&&cur!==nowList.uri){
+      if(stopAfter()&&state.is_playing){state.is_playing=false;api('/me/player/pause',{method:'PUT'}).catch(()=>{})}
+      nowList=null;
+    }
     renderNow();
     const d=state&&state.device;
     if(d&&d.supports_volume!==false&&d.volume_percent>maxVol()) setVol(maxVol());
@@ -520,7 +585,7 @@ async function openSongs(it){
 function closeSongs(){openList=null;$('songs').hidden=true}
 function renderNow(){
   $('toggle').innerHTML=state&&state.is_playing?ICON_PAUSE:ICON_PLAY;
-  const ctx=state&&state.context&&state.context.uri, cur=state&&state.item&&state.item.uri;
+  const ctx=nowList?nowList.from:state&&state.context&&state.context.uri, cur=state&&state.item&&state.item.uri;
   document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('playing',!!(state&&(t.dataset.uri===ctx||t.dataset.uri===cur))));
 }
 
@@ -639,12 +704,17 @@ async function addFromLink(){
 /* ---------- Skjermbytte og knapper ---------- */
 function showSetup(){
   $('kid').hidden=true;$('parent').hidden=true;$('setup').hidden=false;
-  $('redir').textContent=REDIRECT;$('cid').value=store.get(K.cid,'');
+  const saved=store.get(K.cid,'');
+  $('redir').textContent=REDIRECT;$('cid').value=saved&&saved!==CLIENT_ID?saved:'';
+  // Med innebygd Client ID trenger de fleste bare innloggingsknappen
+  const easy=!!CLIENT_ID&&!$('cid').value;
+  $('own').hidden=easy;$('easyInfo').hidden=!easy;$('useOwn').hidden=!easy;
 }
 function showKid(){$('setup').hidden=true;$('kid').hidden=false;renderGrid();poll()}
 
 $('copy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(REDIRECT).then(()=>toast('Kopiert.'),()=>{})};
 $('login').onclick=login;
+$('useOwn').onclick=()=>{$('own').hidden=false;$('easyInfo').hidden=true;$('useOwn').hidden=true};
 $('toggle').onclick=toggle;
 $('closeSongs').onclick=closeSongs;
 $('prev').onclick=()=>skip('previous');
