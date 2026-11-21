@@ -1,71 +1,116 @@
 <!doctype html>
-<html lang="no">
+<html lang="no" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Musikk">
-<meta name="theme-color" content="#EEE8FF">
+<meta name="theme-color" content="#0E1F15">
 <title>Musikk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Grønntoner, med rosa som farge for det som spilles */
 :root{
-  --bg:#EEE8FF; --ink:#2A1B4A; --soft:#6E5F92; --card:#FFFFFF; --press:#CFC3F5;
-  --pink:#FF4FA3; --pinkDeep:#D9307F; --teal:#12A594; --bar:#2A1B4A; --barInk:#F6F2FF;
+  --bg:#E6F4E8; --ink:#173A24; --soft:#4F7A5C; --card:#FFFFFF; --press:#BFE0C6;
+  --pink:#FF4FA3; --teal:#2FA05A; --bar:#1E4A30; --barInk:#F1FBF2;
   --font:'Fredoka', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
+  --solid:var(--ink); --fieldBg:#fff; --fieldLine:var(--press);
+  --tileInk:#BFE0C6; --scribBtn:#3E7D55;
 }
+/* Mørk modus (standard). Kan byttes i voksenmodus. */
+:root[data-theme="dark"]{
+  --bg:#0E1F15; --ink:#E8F6EA; --soft:#9CC4A6; --card:#1B3324; --press:#071209; --bar:#071209;
+  --teal:#3DBA6A; --solid:#24452F; --fieldBg:#1B3324; --fieldLine:#2E5A3D;
+  --tileInk:#21402C; --scribBtn:#2E5A3D;
+}
+.seg .btn.on{background:var(--pink);color:#fff}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-tap-highlight-color:transparent}
-body{padding-top:env(safe-area-inset-top,0px);-webkit-user-select:none;user-select:none}
-button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+body{padding-top:env(safe-area-inset-top,0px);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+/* Hindrer at Safari forstørrer bildene (forhåndsvisning) når man holder fingeren på en knapp */
+#kid img,#parent img,#picker img{pointer-events:none;-webkit-user-drag:none;-webkit-touch-callout:none}
+/* Barnevisningen skal aldri zoomes eller flyttes på; trykk virker som vanlig */
+#kid,#kid *{touch-action:none}
 button:focus-visible,input:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
 [hidden]{display:none!important}
 img{max-width:100%;display:block}
 
 /* ---------- Barnevisning ---------- */
-#kid{min-height:100%;padding:28px 28px 190px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
-.hello{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:700;line-height:1.05;margin:0;letter-spacing:-.01em}
-.gear{position:relative;width:52px;height:52px;border-radius:50%;font-size:26px;opacity:.4;flex:none;touch-action:none}
+#kid{height:calc(100vh - env(safe-area-inset-top,0px));height:calc(100dvh - env(safe-area-inset-top,0px));
+  display:flex;flex-direction:column;padding:20px 24px 152px}
+#kid[hidden]{display:none}
+.top{position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:18px;flex:none}
+/* Tittelen: hver bokstav i sin fargestiftfarge, litt skjev */
+.hello{font-size:clamp(2.4rem,5vw,3.6rem);font-weight:700;line-height:1.05;margin:0;letter-spacing:.04em;text-align:center;
+  text-shadow:0 0 2px rgba(255,255,255,.35)}
+.hello span{display:inline-block}
+.hello span:nth-child(6n+1){color:#FF6B6B;transform:rotate(-4deg)}
+.hello span:nth-child(6n+2){color:#FFD93D;transform:rotate(3deg) translateY(2px)}
+.hello span:nth-child(6n+3){color:#6BCB77;transform:rotate(-2deg)}
+.hello span:nth-child(6n+4){color:#4D96FF;transform:rotate(4deg) translateY(-2px)}
+.hello span:nth-child(6n+5){color:#C77DFF;transform:rotate(-3deg)}
+.hello span:nth-child(6n+6){color:#FF9F45;transform:rotate(2deg)}
+.gear{position:absolute;right:0;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;font-size:26px;opacity:.4;touch-action:none}
 .gear::after{content:"";position:absolute;inset:0;border-radius:50%;border:4px solid var(--pink);transform:scale(0);opacity:0}
 .gear.holding{opacity:1}
 .gear.holding::after{animation:grow 1.4s linear forwards}
 @keyframes grow{to{transform:scale(1);opacity:1}}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:24px}
-.tile{display:flex;flex-direction:column;gap:12px;padding:12px 12px 16px;background:var(--card);border-radius:30px;
-  box-shadow:0 8px 0 var(--press);transition:transform .08s,box-shadow .08s;text-align:left;position:relative}
-.tile:active{transform:translateY(6px);box-shadow:0 2px 0 var(--press)}
-.tile .art{aspect-ratio:1;width:100%;border-radius:22px;object-fit:cover;background:var(--press)}
-.tile .ph{aspect-ratio:1;border-radius:22px;display:grid;place-items:center;font-size:64px}
-.tile .name{font-size:1.25rem;font-weight:600;line-height:1.15;padding:0 6px;
+/* 3 x 3 ruter som alltid fyller skjermen, uten scrolling */
+.grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:18px}
+/* Rutene har ingen egen bakgrunn; den rablete flaten (.tileScrib) tegnes bak innholdet,
+   så bildene ikke påvirkes. Når noe spilles, blir hele ruta rosa. */
+.tile{display:flex;flex-direction:column;gap:8px;min-height:0;padding:10px 10px 12px;border-radius:26px;
+  transition:transform .08s;position:relative;isolation:isolate}
+.tile:active{transform:translateY(6px)}
+.tile svg.tileScrib{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.tile .tileScrib path{stroke:var(--tileInk)}
+.tile .art{flex:1;min-height:0;width:100%;border-radius:18px;object-fit:cover;background:var(--press)}
+.tile .ph{flex:1;min-height:0;border-radius:18px;display:grid;place-items:center;font-size:clamp(36px,6vmin,64px)}
+/* All tekst i barnevisningen: store bokstaver og sentrert */
+.tile .name{flex:none;font-size:clamp(1rem,2.2vmin,1.3rem);font-weight:600;line-height:1.15;padding:0 4px;overflow-wrap:anywhere;
+  text-transform:uppercase;text-align:center;letter-spacing:.03em;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tile.playing{box-shadow:0 8px 0 var(--pinkDeep);outline:5px solid var(--pink)}
-.tile.playing::before{content:"♪";position:absolute;top:2px;right:2px;width:52px;height:52px;border-radius:50%;
-  background:var(--pink);color:#fff;display:grid;place-items:center;font-size:30px;font-weight:700;z-index:1}
-.empty{font-size:1.4rem;color:var(--soft);max-width:30ch;line-height:1.4}
+.tile.playing{--tileInk:var(--pink)}
+.tile.playing .name{color:#fff}
+.tile.playing::before{content:"♪";position:absolute;top:2px;right:2px;width:52px;height:52px;border-radius:54% 46% 52% 48%;
+  transform:rotate(-8deg);background:var(--pink);color:#fff;display:grid;place-items:center;font-size:30px;font-weight:700;z-index:1}
+.empty{grid-column:1/-1;font-size:1.4rem;color:var(--soft);max-width:30ch;line-height:1.4;text-transform:uppercase;text-align:center;margin:0 auto}
 
-.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bar);color:var(--barInk);border-radius:34px 34px 0 0;
-  padding:16px 24px calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-.now{display:flex;align-items:center;gap:14px;flex:1 1 240px;min-width:0}
-.now img,.now .noart{width:76px;height:76px;border-radius:18px;flex:none;object-fit:cover;background:#4A3A70}
-.now .t{font-size:1.3rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.now .a{font-size:1rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.now div{min-width:0}
-.ctrls{display:flex;align-items:center;gap:16px}
-.cbtn{width:68px;height:68px;border-radius:50%;background:#4A3A70;display:grid;place-items:center}
+/* Sangvindu som legger seg over hjemskjermen */
+#songs{position:fixed;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column;
+  padding:calc(20px + env(safe-area-inset-top,0px)) 24px 152px;animation:up .18s ease-out}
+#songs[hidden]{display:none}
+@keyframes up{from{transform:translateY(24px);opacity:0}}
+.songsTop{display:flex;justify-content:center;margin-bottom:18px;flex:none}
+.close{position:relative;isolation:isolate;width:72px;height:72px;border-radius:50%;color:#fff;display:grid;place-items:center}
+.close svg{width:34px;height:34px;stroke:currentColor;stroke-width:3.5;stroke-linecap:round;fill:none}
+
+/* Bunnlinja: fargelagt med fargestift (ujevn kant og små hull i fargen) */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:15;isolation:isolate;color:var(--barInk);
+  padding:16px 24px calc(16px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:center}
+.bar::before{content:"";position:absolute;inset:0 -10px -10px;z-index:-1;background:var(--bar);
+  border-radius:40px 30px 0 0;filter:url(#crayon)}
+.ctrls{display:flex;align-items:center;gap:32px}
+.cbtn{position:relative;isolation:isolate;width:68px;height:68px;border-radius:50%;display:grid;place-items:center}
 .cbtn svg{width:32px;height:32px;fill:currentColor}
-.cbtn.big{width:96px;height:96px;background:var(--pink);box-shadow:0 6px 0 var(--pinkDeep)}
+.cbtn.big{width:96px;height:96px}
 .cbtn.big svg{width:46px;height:46px}
 .cbtn:active{transform:translateY(3px)}
-.cbtn.big:active{box-shadow:0 2px 0 var(--pinkDeep)}
-.vol{display:flex;align-items:center;gap:10px;flex:0 1 220px;font-size:24px}
+#toggleIcon{display:grid}
+/* Styreknappene og X: rablete rundinger uten fast kant */
+.cbtn svg.scrib,.close svg.scrib{position:absolute;left:-10%;top:-10%;width:120%;height:120%;z-index:-1;
+  pointer-events:none;fill:none;stroke:none;color:var(--scribBtn)}
+.scrib path{stroke:currentColor}
+.cbtn.big svg.scrib{color:var(--pink)}
+.cbtn:active svg.scrib,.close:active svg.scrib{transform:scale(.94)}
 input[type=range]{width:100%;accent-color:var(--pink);height:36px}
 
-.toast{position:fixed;left:50%;top:calc(20px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:#fff;
+.toast{position:fixed;left:50%;top:calc(20px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--solid);color:#fff;
   padding:14px 22px;border-radius:20px;font-size:1.1rem;max-width:min(90vw,520px);text-align:center;z-index:50;box-shadow:0 8px 24px rgba(42,27,74,.3)}
 
 /* ---------- Oppsett og voksenmodus ---------- */
@@ -77,8 +122,8 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
 .sec{background:var(--card);border-radius:24px;padding:20px;margin-top:18px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .code{flex:1;min-width:0;background:var(--bg);border-radius:12px;padding:12px;font-size:.95rem;word-break:break-all}
-.field{flex:1;min-width:200px;font:inherit;font-size:1rem;padding:12px 14px;border-radius:14px;border:2px solid var(--press);background:#fff;color:var(--ink)}
-.btn{background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-weight:600}
+.field{flex:1;min-width:200px;font:inherit;font-size:1rem;padding:12px 14px;border-radius:14px;border:2px solid var(--fieldLine);background:var(--fieldBg);color:var(--ink)}
+.btn{background:var(--solid);color:#fff;padding:12px 18px;border-radius:14px;font-weight:600}
 .btn.pink{background:var(--pink)}
 .btn.ghost{background:var(--bg);color:var(--ink)}
 .list{display:flex;flex-direction:column;gap:8px}
@@ -90,14 +135,59 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
 .dev{width:100%;text-align:left}
 .dev.on{outline:3px solid var(--teal)}
 .head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.panel .ver{text-align:center;margin:22px 0 0;font-size:.9rem;opacity:.7}
+.item .field{min-width:120px}
+
+/* Bilde/ikon som kan trykkes på for å endres */
+.thumb{position:relative;width:56px;height:56px;border-radius:12px;flex:none;overflow:hidden;background:var(--press);
+  display:grid;place-items:center;font-size:30px}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;max-width:none;border-radius:0;object-fit:cover}
+.thumb::after{content:"✎";position:absolute;right:3px;bottom:3px;width:20px;height:20px;border-radius:50%;
+  background:var(--pink);color:#fff;font-size:12px;display:grid;place-items:center}
+.songList{display:flex;flex-direction:column;gap:6px;margin:0 0 8px 34px}
+.songList .item{padding:6px}
+.songList .thumb{width:48px;height:48px;font-size:26px}
+
+/* Velger for ikon og bilde */
+#picker{position:fixed;inset:0;z-index:30;background:rgba(5,3,12,.55);display:flex;align-items:flex-end;justify-content:center}
+#picker[hidden]{display:none}
+.sheet{background:var(--card);width:min(640px,100%);max-height:92vh;overflow-y:auto;border-radius:28px 28px 0 0;
+  padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));animation:up .18s ease-out}
+.sheet h2{font-size:1.3rem;margin:0;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet h3{font-size:1rem;margin:18px 0 8px;font-weight:600;color:var(--soft)}
+.preview{width:132px;height:132px;border-radius:24px;margin:18px auto 0;overflow:hidden;background:var(--press);
+  display:grid;place-items:center;font-size:72px}
+.preview{position:relative}
+.preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.emojis{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px}
+.emojis button{font-size:30px;height:52px;border-radius:14px;background:var(--bg)}
+.emojis button.on{outline:3px solid var(--pink)}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.colors button{width:46px;height:46px;border-radius:50%;border:4px solid transparent}
+.colors button.on{border-color:var(--ink)}
+/* Gjennomsiktig: rutemønster som viser at det ikke er noen farge */
+.colors button.clear{background:repeating-conic-gradient(#C9C9D6 0 25%,#fff 0 50%) 0 0/14px 14px}
 </style>
 </head>
 <body>
+
+<!-- Fargestift-filter: ujevne kanter og små hull i fargen -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="crayon" x="-4%" y="-4%" width="108%" height="108%">
+    <feTurbulence type="fractalNoise" baseFrequency=".03" numOctaves="3" seed="3" result="warp"/>
+    <feDisplacementMap in="SourceGraphic" in2="warp" scale="7" xChannelSelector="R" yChannelSelector="G" result="wob"/>
+    <feTurbulence type="fractalNoise" baseFrequency=".75 .07" numOctaves="2" seed="11" result="grain"/>
+    <feColorMatrix in="grain" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.95" result="mask"/>
+    <feComposite in="wob" in2="mask" operator="in"/>
+  </filter>
+</svg>
 
 <!-- Oppsett -->
 <section id="setup" class="panel" hidden>
   <h1>Sett opp musikkappen</h1>
   <p>Dette gjør du bare én gang. Etterpå er det bare å trykke på musikken.</p>
+  <p id="easyInfo" hidden>Logg inn med Spotify-kontoen din. Du trenger Spotify Premium, og kontoen må være lagt til av den som har laget appen.</p>
+  <div id="own">
   <div class="sec">
     <h2>Adresse til Spotify</h2>
     <p>Lim inn denne som «Redirect URI» når du lager appen på developer.spotify.com.</p>
@@ -105,29 +195,35 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
   </div>
   <div class="sec">
     <h2>Client ID</h2>
-    <p>Ferdig utfylt. Har du laget din egen Spotify-app, kan du lime inn din Client ID her i stedet.</p>
+    <p>Finnes på siden til appen din i Spotify-dashbordet.</p>
     <div class="row"><input class="field" id="cid" placeholder="Lim inn Client ID" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
   </div>
+  </div>
   <div class="sec">
-    <button class="btn pink" id="login">Logg inn med Spotify</button>
+    <div class="row">
+      <button class="btn pink" id="login">Logg inn med Spotify</button>
+      <button class="btn ghost" id="useOwn" hidden>Bruk egen Spotify-app</button>
+    </div>
   </div>
 </section>
 
 <!-- Barnevisning -->
 <main id="kid" hidden>
   <div class="top">
-    <h1 class="hello" id="hello">Hva vil du høre?</h1>
+    <h1 class="hello" id="hello" aria-label="Musikk"><span>M</span><span>U</span><span>S</span><span>I</span><span>K</span><span>K</span></h1>
     <button class="gear" id="gear" aria-label="Voksenmodus: hold inne">⚙️</button>
   </div>
   <div class="grid" id="grid"></div>
+  <section id="songs" hidden>
+    <div class="songsTop"><button class="close" id="closeSongs" aria-label="Tilbake til hjem"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="grid" id="songGrid"></div>
+  </section>
   <div class="bar">
-    <div class="now" id="now"><div class="noart"></div><div><div class="t">Velg noe musikk</div><div class="a">&nbsp;</div></div></div>
     <div class="ctrls">
       <button class="cbtn" id="prev" aria-label="Forrige"><svg viewBox="0 0 24 24"><path d="M6 5h2.5v14H6zM20 5v14L9 12z"/></svg></button>
-      <button class="cbtn big" id="toggle" aria-label="Spill eller pause"></button>
+      <button class="cbtn big" id="toggle" aria-label="Spill eller pause"><span id="toggleIcon"></span></button>
       <button class="cbtn" id="next" aria-label="Neste"><svg viewBox="0 0 24 24"><path d="M15.5 5H18v14h-2.5zM4 5l11 7-11 7z"/></svg></button>
     </div>
-    <label class="vol" id="volWrap"><span aria-hidden="true">🔈</span><input type="range" id="vol" min="0" max="100" value="40" aria-label="Volum"><span aria-hidden="true">🔊</span></label>
   </div>
 </main>
 
@@ -135,12 +231,6 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
 <section id="parent" hidden>
   <div class="panel">
     <div class="head"><h1>Voksenmodus</h1><button class="btn pink" id="done">Ferdig</button></div>
-
-    <div class="sec">
-      <h2>Navn</h2>
-      <p>Vises øverst: «Hei, navn!»</p>
-      <input class="field" id="kidName" placeholder="Valgfritt">
-    </div>
 
     <div class="sec">
       <div class="head"><h2>Hvor skal musikken spilles?</h2><button class="btn ghost" id="refreshDev">Søk igjen</button></div>
@@ -151,6 +241,23 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
     <div class="sec">
       <h2>Høyeste volum</h2>
       <div class="row"><input type="range" id="maxVol" min="10" max="100" step="5" style="flex:1"><b id="maxVolLbl"></b></div>
+    </div>
+
+    <div class="sec">
+      <h2>Utseende</h2>
+      <div class="row seg" id="theme">
+        <button class="btn ghost" data-theme="dark">🌙 Mørk</button>
+        <button class="btn ghost" data-theme="light">☀️ Lys</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>Når en sang er ferdig</h2>
+      <div class="row seg" id="stopMode">
+        <button class="btn ghost" data-stop="1">⏹ Stopp</button>
+        <button class="btn ghost" data-stop="0">⏭ Spill videre</button>
+      </div>
+      <p style="margin-top:12px">Slå også av «Autoavspilling» i innstillingene i Spotify-appen, så Spotify ikke finner på å spille noe annet.</p>
     </div>
 
     <div class="sec">
@@ -170,17 +277,37 @@ input[type=range]{width:100%;accent-color:var(--pink);height:36px}
     </div>
 
     <div class="sec"><button class="btn ghost" id="logout">Logg ut av Spotify</button></div>
+    <p class="ver">Versjon 1.5</p>
   </div>
 </section>
+
+<!-- Velger for ikon eller eget bilde -->
+<div id="picker" hidden>
+  <div class="sheet">
+    <div class="head"><h2 id="pickTitle"></h2><button class="btn pink" id="pickDone">Ferdig</button></div>
+    <div class="preview" id="pickPrev"></div>
+    <h3>Eget bilde</h3>
+    <div class="row">
+      <button class="btn" id="pickUpload">📷 Last opp bilde</button>
+      <button class="btn ghost" id="pickReset"></button>
+      <input type="file" accept="image/*" id="upload" hidden>
+    </div>
+    <h3>Eller velg et ikon</h3>
+    <div class="emojis" id="emojis"></div>
+    <h3>Bakgrunnsfarge</h3>
+    <div class="colors" id="colors"></div>
+  </div>
+</div>
 
 <div class="toast" id="toast" hidden></div>
 
 <script>
-// Client ID fra Spotify-dashbordet. Brukes når ingen annen er skrevet inn på enheten.
-const DEFAULT_CLIENT_ID='b690adfe07de48c2ab292484c10407aa';
 const SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative';
-const K={cid:'mk.clientId',tok:'mk.tokens',items:'mk.items',dev:'mk.device',vol:'mk.maxVol',ver:'mk.verifier',name:'mk.name'};
+const K={cid:'mk.clientId',tok:'mk.tokens',items:'mk.items',dev:'mk.device',vol:'mk.maxVol',ver:'mk.verifier',theme:'mk.theme',art:'mk.art',stop:'mk.stopAfter'};
 const REDIRECT=location.origin+location.pathname.replace(/index\.html$/,'');
+// Client ID fra Spotify-dashbordet. Brukes av alle som ikke har sin egen Spotify-app.
+const CLIENT_ID='b690adfe07de48c2ab292484c10407aa';
+const MAX_ITEMS=9;
 const COLORS=['#FFD84D','#7DD3FC','#A7F3D0','#FDA4AF','#C4B5FD','#FDBA74'];
 const ICON_PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z"/></svg>';
 const ICON_PAUSE='<svg viewBox="0 0 24 24"><path d="M6 4.5h4.5v15H6zM13.5 4.5H18v15h-4.5z"/></svg>';
@@ -194,13 +321,107 @@ const store={
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 function img(src,cls){if(!src)return el('div',cls==='art'?'ph':'noimg');const i=new Image();i.src=src;i.alt='';i.className=cls||'';return i}
 
+/* ---------- Egne ikoner og bilder ---------- */
+// Lagres per Spotify-adresse, så en sang får samme bilde i alle spillelister
+const EMOJIS=['🐻','🦊','🐺','🐰','🐸','🐵','🐶','🐱','🦁','🐷','🐮','🐘','🦄','🐲','🐳','🐠','🦋','🐞',
+  '🌈','⭐','🌙','☀️','🌸','🍓','🍌','🎂','🎈','🚗','🚌','🚂','🚀','🏴‍☠️','🏰','🎸','🎻','🥁','🎺','🎹','🎤','💃','🧸','❤️','💛','🎵'];
+const ART_COLORS=['#FFD84D','#7DD3FC','#A7F3D0','#FDA4AF','#C4B5FD','#FDBA74','#A5B4FC','#BBF7D0','#FCA5A5','transparent'];
+let ART=store.get(K.art,{});
+function saveArt(uri,v){
+  const next=Object.assign({},ART);
+  if(v) next[uri]=v; else delete next[uri];
+  try{localStorage.setItem(K.art,JSON.stringify(next))}
+  catch(e){toast('Det er ikke plass til flere bilder. Bruk ikoner på noen av dem.');return false}
+  ART=next;return true;
+}
+// Lager bilde-elementet: eget bilde, så eget ikon, så Spotify-bildet, ellers en note
+function artEl(it,i,big){
+  const c=ART[it.uri];
+  const src=c&&c.image||(!c&&it.image);
+  if(src) return img(src,big?'art':'');
+  const p=el('div',big?'ph':'phs',(c&&c.emoji)||'🎵');
+  p.style.background=(c&&c.color)||COLORS[i%COLORS.length];
+  return p;
+}
+function thumb(it,i){
+  const b=el('button','thumb');b.setAttribute('aria-label','Endre bilde for '+it.name);
+  b.refresh=()=>{
+    b.textContent='';b.style.background='';
+    const a=artEl(it,i,false);
+    if(a.tagName==='IMG') b.appendChild(a); else{b.textContent=a.textContent;b.style.background=a.style.background}
+  };
+  b.refresh();b.onclick=()=>openPicker(it,i,b);
+  return b;
+}
+// Krymper bildet før det lagres, så det får plass på iPaden
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+    const s=Math.min(1,400/Math.max(im.width,im.height));
+    const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',.78);
+  }finally{URL.revokeObjectURL(url)}
+}
+let pick=null;
+function openPicker(it,i,btn){
+  pick={it,i,btn};
+  $('pickTitle').textContent=it.name;
+  $('pickReset').textContent=it.image?'Bruk Spotify-bildet':'Fjern eget bilde';
+  $('picker').hidden=false;
+  renderPicker();
+}
+function renderPicker(){
+  const {it,i}=pick, c=ART[it.uri]||{};
+  const pv=$('pickPrev');pv.textContent='';pv.style.background='';
+  const a=artEl(it,i,false);
+  if(a.tagName==='IMG') pv.appendChild(a); else{pv.textContent=a.textContent;pv.style.background=a.style.background}
+  const curEmoji=c.emoji||'', curColor=c.color||COLORS[i%COLORS.length];
+  const em=$('emojis');em.textContent='';
+  EMOJIS.forEach(e=>{const b=el('button',e===curEmoji?'on':'',e);b.onclick=()=>setPick({emoji:e,color:curColor});em.appendChild(b)});
+  const co=$('colors');co.textContent='';
+  ART_COLORS.forEach(col=>{
+    const b=el('button',(c.emoji&&col===curColor?'on ':'')+(col==='transparent'?'clear':''));
+    if(col!=='transparent') b.style.background=col;
+    b.setAttribute('aria-label',col==='transparent'?'Gjennomsiktig':'Farge');
+    b.onclick=()=>setPick({emoji:curEmoji||'🎵',color:col});co.appendChild(b);
+  });
+}
+function setPick(v){if(saveArt(pick.it.uri,v)){pick.btn.refresh();renderPicker()}}
+function closePicker(){$('picker').hidden=true;pick=null}
+$('pickDone').onclick=closePicker;
+$('picker').onclick=e=>{if(e.target===$('picker')) closePicker()};
+$('pickReset').onclick=()=>setPick(null);
+$('pickUpload').onclick=()=>$('upload').click();
+$('upload').onchange=async e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f||!pick) return;
+  try{setPick({image:await shrink(f)})}catch(err){toast('Klarte ikke å lese bildet.')}
+};
+
+/* ---------- Utseende (mørk er standard) ---------- */
+function applyTheme(t){
+  document.documentElement.dataset.theme=t;
+  document.querySelector('meta[name=theme-color]').content=t==='dark'?'#0E1F15':'#E6F4E8';
+  document.querySelectorAll('#theme .btn').forEach(b=>b.classList.toggle('on',b.dataset.theme===t));
+}
+applyTheme(store.get(K.theme,'dark'));
+document.querySelectorAll('#theme .btn').forEach(b=>b.onclick=()=>{store.set(K.theme,b.dataset.theme);applyTheme(b.dataset.theme)});
+
+/* ---------- Stopp etter hver sang (på som standard) ---------- */
+function markStop(){const on=store.get(K.stop,true);document.querySelectorAll('#stopMode .btn').forEach(b=>b.classList.toggle('on',(b.dataset.stop==='1')===on))}
+document.querySelectorAll('#stopMode .btn').forEach(b=>b.onclick=()=>{store.set(K.stop,b.dataset.stop==='1');markStop()});
+markStop();
+
 let toastT;
 function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,4000)}
 
 /* ---------- Innlogging (PKCE, ingen server trengs) ---------- */
 function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 async function login(){
-  const cid=$('cid').value.trim();
+  // Egen Client ID hvis feltet er synlig og fylt ut, ellers den innebygde
+  const cid=(!$('own').hidden&&$('cid').value.trim())||CLIENT_ID;
   if(!cid) return toast('Lim inn Client ID først.');
   store.set(K.cid,cid);
   const v=b64url(crypto.getRandomValues(new Uint8Array(48)));
@@ -262,18 +483,45 @@ let state=null;
 const maxVol=()=>store.get(K.vol,70);
 
 async function getDevices(){const j=await api('/me/player/devices');return (j&&j.devices)||[]}
+// Spiller aldri på en annen enhet enn den som er valgt, uten å si fra
 async function pickDevice(){
-  const ds=await getDevices();const saved=store.get(K.dev,null)||{};
-  const d=ds.find(x=>x.id===saved.id)||ds.find(x=>saved.name&&x.name===saved.name)||ds.find(x=>x.is_active)||ds[0];
-  return d?d.id:null;
+  const ds=await getDevices();const saved=store.get(K.dev,null);
+  if(saved&&(saved.id||saved.name)){
+    const d=ds.find(x=>x.id===saved.id)||ds.find(x=>saved.name&&x.name===saved.name);
+    if(d) return d.id;
+    toast(`Finner ikke «${saved.name||'enheten'}». Åpne Spotify-appen på den et øyeblikk, og prøv igjen.`);
+    return null;
+  }
+  // Ingen enhet valgt ennå: bruk den eneste som finnes, og si hvilken det er
+  if(ds.length===1){
+    store.set(K.dev,{id:ds[0].id,name:ds[0].name});
+    toast(`Spiller på «${ds[0].name}». Kan endres i voksenmodus.`);
+    return ds[0].id;
+  }
+  toast(ds.length?'Velg hvor musikken skal spilles i voksenmodus (hold inne tannhjulet).'
+    :'Finner ingen steder å spille musikken. Åpne Spotify-appen et øyeblikk, og prøv igjen.');
+  return null;
 }
-async function playItem(it){
+// Stopp etter hver sang (standard): bare den valgte sangen sendes til Spotify,
+// så avspillingen stopper av seg selv når sangen er ferdig.
+const stopAfter=()=>store.get(K.stop,true);
+let nowList=null; // {from: spilleliste-adresse, songs: [...], uri: sangen som spilles}
+async function playItem(it,startAt){
   try{
     const dev=await pickDevice();
-    if(!dev) return toast('Finner ikke høyttaleren. Åpne Spotify-appen et øyeblikk, og prøv igjen.');
-    const body=it.uri.includes(':track:')?{uris:[it.uri]}:{context_uri:it.uri};
+    if(!dev) return;
+    let body;
+    if(startAt&&stopAfter()){
+      body={uris:[startAt]};
+      nowList={from:it.uri,songs:songCache[it.uri]||[],uri:startAt};
+    }else{
+      body=it.uri.includes(':track:')?{uris:[it.uri]}:{context_uri:it.uri};
+      if(startAt) body.offset={uri:startAt};
+      nowList=null;
+    }
     await api('/me/player/play?device_id='+encodeURIComponent(dev),{method:'PUT',body:JSON.stringify(body)});
-    state=Object.assign(state||{},{is_playing:true,context:{uri:it.uri}});
+    if(stopAfter()) api('/me/player/repeat?state=off&device_id='+encodeURIComponent(dev),{method:'PUT'}).catch(()=>{});
+    state=Object.assign(state||{},{is_playing:true,context:{uri:it.uri}},startAt?{item:{uri:startAt}}:{});
     renderNow();setTimeout(poll,900);
   }catch(e){handleErr(e)}
 }
@@ -283,15 +531,26 @@ async function toggle(){
       state.is_playing=false;renderNow();
       await api('/me/player/pause',{method:'PUT'});
     }else{
-      const dev=state&&state.device?state.device.id:await pickDevice();
-      if(!dev) return toast('Trykk på noe musikk først.');
+      const dev=await pickDevice();
+      if(!dev) return renderNow();
       if(state) state.is_playing=true;renderNow();
       await api('/me/player/play?device_id='+encodeURIComponent(dev),{method:'PUT'});
     }
     setTimeout(poll,700);
   }catch(e){handleErr(e);poll()}
 }
-async function skip(dir){try{await api('/me/player/'+dir,{method:'POST'});setTimeout(poll,700)}catch(e){handleErr(e)}}
+async function skip(dir){
+  // Når én og én sang spilles, finner appen selv neste eller forrige sang i lista
+  // (siste sang + neste gjør ingenting; første sang + forrige starter sangen på nytt)
+  const s=nowList&&(songCache[nowList.from]||nowList.songs);
+  if(stopAfter()&&s&&s.length){
+    const i=s.findIndex(x=>x.uri===nowList.uri);
+    if(dir==='next'&&i>=s.length-1) return;
+    const j=dir==='next'?i+1:Math.max(0,i-1);
+    return playItem({uri:nowList.from},s[j].uri);
+  }
+  try{await api('/me/player/'+dir,{method:'POST'});setTimeout(poll,700)}catch(e){handleErr(e)}
+}
 let volT;
 function setVol(v){
   clearTimeout(volT);
@@ -301,6 +560,12 @@ async function poll(){
   if(document.hidden||$('kid').hidden||!store.get(K.tok,null)) return;
   try{
     state=await api('/me/player');
+    // Sikkerhetsnett: starter Spotify en annen sang av seg selv (f.eks. Autoavspilling), pauses den
+    const cur=state&&state.item&&state.item.uri;
+    if(nowList&&cur&&cur!==nowList.uri){
+      if(stopAfter()&&state.is_playing){state.is_playing=false;api('/me/player/pause',{method:'PUT'}).catch(()=>{})}
+      nowList=null;
+    }
     renderNow();
     const d=state&&state.device;
     if(d&&d.supports_volume!==false&&d.volume_percent>maxVol()) setVol(maxVol());
@@ -311,49 +576,177 @@ async function poll(){
 function renderGrid(){
   const g=$('grid');g.textContent='';
   const items=store.get(K.items,[]);
-  const name=store.get(K.name,'');
-  $('hello').textContent=name?`Hei, ${name}! Hva vil du høre?`:'Hva vil du høre?';
   if(!items.length){
     g.appendChild(el('p','empty','Her er det ingen musikk ennå. En voksen kan holde inne tannhjulet for å velge.'));
     return;
   }
-  items.forEach((it,i)=>{
-    const b=el('button','tile');b.dataset.uri=it.uri;b.setAttribute('aria-label','Spill '+it.name);
-    if(it.image) b.appendChild(img(it.image,'art'));
-    else{const p=el('div','ph','🎵');p.style.background=COLORS[i%COLORS.length];b.appendChild(p)}
-    b.appendChild(el('div','name',it.name));
-    b.onclick=()=>playItem(it);
-    g.appendChild(b);
+  items.slice(0,MAX_ITEMS).forEach((it,i)=>{
+    // Spillelister og album åpner sangvinduet; artister og enkeltsanger spilles med en gang
+    const opens=/:(playlist|album):/.test(it.uri);
+    g.appendChild(tile(it,i,opens?'Åpne '+it.name:'Spill '+it.name,()=>opens?openSongs(it):playItem(it)));
   });
   renderNow();
 }
+function tile(it,i,label,onclick){
+  const b=el('button','tile');b.dataset.uri=it.uri;b.setAttribute('aria-label',label);
+  b.appendChild(artEl(it,i,true));
+  b.appendChild(el('div','name',it.name));
+  b.onclick=onclick;
+  tileRO.observe(b); // rablingen tegnes når ruta har fått sin størrelse
+  return b;
+}
+
+/* ---------- Fargestift-rabling ---------- */
+// Rablet runding til styreknappene og X. Kanten er bevisst lik fra gang til gang.
+function scribble(seed){
+  let s=seed;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;
+  const r=44,c=50;
+  // Disse trekkene bestemmer formen på kanten under, så de må stå selv om resultatet ikke brukes
+  for(let v=-r+4;v<=r-4;v+=6.5+rnd()*2){rnd();rnd()}
+  let o='';
+  for(let t=0;t<=Math.PI*3.1;t+=0.35){
+    const rr=r-1+(rnd()-.5)*7, x=c+Math.cos(t+seed)*rr, y=c+Math.sin(t+seed)*rr;
+    o+=(o?' L':'M')+x.toFixed(1)+' '+y.toFixed(1);
+  }
+  // Fyllet: 2–3 lag med streker i tilfeldige retninger, med ujevn avstand, lengde, bue og tykkelse
+  let s2=seed*7919+3;const r2=()=>(s2=(s2*48271)%2147483647)/2147483647;
+  let fill='';
+  const passes=2+Math.floor(r2()*2);
+  for(let p=0;p<passes;p++){
+    const ang=r2()*Math.PI, ca=Math.cos(ang), sa=Math.sin(ang);
+    const Q=(u,v)=>[c+u*ca-v*sa,c+u*sa+v*ca];
+    let path='',dir=r2()<.5?1:-1;
+    for(let v=-r+3+r2()*6;v<=r-3;v+=5+r2()*9){
+      const full=Math.sqrt(r*r-v*v);
+      const L=full*(0.55+r2()*0.5), shift=(r2()-.5)*full*0.5;
+      const u1=Math.max(-full,Math.min(full,shift-L))*dir, u2=Math.max(-full,Math.min(full,shift+L))*dir;
+      const [x1,y1]=Q(u1,v+(r2()-.5)*4),[x2,y2]=Q(u2,v+(r2()-.5)*6),[mx,my]=Q((u1+u2)/2,v+(r2()-.5)*10);
+      path+=(!path||r2()<.25?' M':' L')+x1.toFixed(1)+' '+y1.toFixed(1)+' Q'+mx.toFixed(1)+' '+my.toFixed(1)+' '+x2.toFixed(1)+' '+y2.toFixed(1);
+      dir=-dir;
+    }
+    fill+=`<path d="${path.trim()}" stroke-width="${(4.5+r2()*2.5).toFixed(1)}" opacity="${(.55+r2()*.35).toFixed(2)}"/>`;
+  }
+  return `<svg class="scrib" viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#crayon)">
+    ${fill}<path d="${o}" stroke-width="4" opacity=".75"/></g></svg>`;
+}
+// Rablet bakgrunn til en rute, tegnet i rutas egen størrelse
+function scribbleRect(w,h,seed){
+  let s=seed;const R=()=>(s=(s*48271)%2147483647)/2147483647;
+  const m=5, x0=m, y0=m, x1=w-m, y1=h-m, cx=w/2, cy=h/2, f=v=>v.toFixed(1);
+  let fill='';
+  const passes=2+Math.floor(R()*2);
+  for(let p=0;p<passes;p++){
+    const a=R()*Math.PI, dx=Math.cos(a), dy=Math.sin(a), nx=-dy, ny=dx;
+    const reach=Math.abs(nx)*w/2+Math.abs(ny)*h/2;
+    let path='',dir=R()<.5?1:-1;
+    for(let v=-reach+R()*6;v<=reach;v+=6+R()*9){
+      const px=cx+nx*v, py=cy+ny*v;
+      // Hvor streken treffer kantene av ruta
+      let lo=-1e9,hi=1e9;
+      for(const [o,d,a1,b1] of [[px,dx,x0,x1],[py,dy,y0,y1]]){
+        if(Math.abs(d)<1e-6){if(o<a1||o>b1){lo=1;hi=0}continue}
+        const t1=(a1-o)/d,t2=(b1-o)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));
+      }
+      lo+=R()*10;hi-=R()*10;
+      if(hi-lo<12) continue;
+      const [ta,tb]=dir>0?[lo,hi]:[hi,lo];
+      const X=t=>px+dx*t, Y=t=>py+dy*t, mt=(ta+tb)/2, bend=(R()-.5)*12;
+      path+=(!path||R()<.2?' M':' L')+f(X(ta))+' '+f(Y(ta)+(R()-.5)*3)
+        +' Q'+f(X(mt)+nx*bend)+' '+f(Y(mt)+ny*bend)+' '+f(X(tb))+' '+f(Y(tb)+(R()-.5)*3);
+      dir=-dir;
+    }
+    if(path) fill+=`<path d="${path.trim()}" stroke-width="${f(5+R()*3)}" opacity="${(.6+R()*.35).toFixed(2)}"/>`;
+  }
+  // En løs strek rundt, litt mer enn én runde, i samme farge som fyllet
+  let e='';const start=R()*6.28, ex=w/2-m-1, ey=h/2-m-1;
+  for(let t=0;t<=6.28*1.3;t+=0.12){
+    const co=Math.cos(t+start), si=Math.sin(t+start), k=2/7;
+    const x=cx+ex*Math.sign(co)*Math.pow(Math.abs(co),k)+(R()-.5)*4, y=cy+ey*Math.sign(si)*Math.pow(Math.abs(si),k)+(R()-.5)*4;
+    e+=(e?' L':'M')+f(x)+' '+f(y);
+  }
+  return `<svg class="tileScrib" viewBox="0 0 ${f(w)} ${f(h)}" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#crayon)">
+    ${fill}<path d="${e}" stroke-width="5" opacity=".75"/></g></svg>`;
+}
+function drawTile(t){
+  const w=t.offsetWidth,h=t.offsetHeight;if(!w||!h) return;
+  if(t._sz===w+'x'+h) return;t._sz=w+'x'+h;
+  t.querySelector('.tileScrib')?.remove();
+  // Samme rute får samme mønster hver gang
+  let seed=31+[...t.parentNode.children].indexOf(t)*101;
+  for(const ch of (t.dataset.uri||'')) seed=(seed*31+ch.charCodeAt(0))%2147483646+1;
+  t.insertAdjacentHTML('afterbegin',scribbleRect(w,h,seed));
+}
+// Tegner rutene på nytt når de endrer størrelse, f.eks. når iPaden snus
+const tileRO=new ResizeObserver(es=>es.forEach(e=>{
+  const t=e.target;
+  if(!t.isConnected){tileRO.unobserve(t);return}
+  drawTile(t);
+}));
+['prev','toggle','next'].forEach((id,i)=>$(id).insertAdjacentHTML('afterbegin',scribble(7+i*13)));
+$('closeSongs').insertAdjacentHTML('afterbegin',scribble(53));
+
+/* ---------- Sangvindu ---------- */
+// Sangene hentes på nytt hver gang en spilleliste åpnes, så endringer i Spotify kommer med.
+// Det som ble hentet sist vises med en gang mens de nye hentes.
+const songCache={}, songFetches={};
+function fetchSongs(it){
+  if(!songFetches[it.uri]) songFetches[it.uri]=loadSongs(it).finally(()=>{delete songFetches[it.uri]});
+  return songFetches[it.uri];
+}
+const sameSongs=(a,b)=>a.length===b.length&&a.every((s,i)=>s.uri===b[i].uri&&s.name===b[i].name&&s.image===b[i].image);
+async function loadSongs(it){
+  const [,type,id]=it.uri.split(':');
+  let list=[];
+  if(type==='album'){
+    const j=await api(`/albums/${id}/tracks?limit=${MAX_ITEMS}`);
+    list=(j.items||[]).map(t=>({uri:t.uri,name:t.name,image:it.image}));
+  }else{
+    // Spotify har byttet navn på dette endepunktet; prøv det nye først
+    let j;
+    try{j=await api(`/playlists/${id}/items?limit=${MAX_ITEMS}`)}
+    catch(e){if(e.auth) throw e;j=await api(`/playlists/${id}/tracks?limit=${MAX_ITEMS}`)}
+    list=(j.items||[]).map(x=>x&&(x.item||x.track)).filter(t=>t&&t.uri&&t.uri.includes(':track:')).map(t=>{
+      const ims=(t.album&&t.album.images)||[];
+      return {uri:t.uri,name:t.name,image:ims[0]?ims[0].url:''};
+    });
+  }
+  return songCache[it.uri]=list.slice(0,MAX_ITEMS);
+}
+let openList=null;
+async function openSongs(it){
+  openList=it;
+  const g=$('songGrid'), cached=songCache[it.uri];
+  const show=songs=>{
+    g.textContent='';
+    if(!songs.length){g.appendChild(el('p','empty','Fant ingen sanger her.'));return}
+    songs.forEach((s,i)=>g.appendChild(tile(s,i,'Spill '+s.name,()=>playItem(it,s.uri))));
+    renderNow();
+  };
+  if(cached) show(cached); else{g.textContent='';g.appendChild(el('p','empty','Henter sanger…'))}
+  $('songs').hidden=false;
+  try{
+    const fresh=await fetchSongs(it);
+    if(openList!==it) return;
+    if(!cached||!sameSongs(cached,fresh)) show(fresh);
+  }catch(e){
+    if(cached&&!e.auth) return; // beholder de gamle sangene hvis Spotify ikke svarer
+    g.textContent='';closeSongs();handleErr(e);
+  }
+}
+function closeSongs(){openList=null;$('songs').hidden=true}
 function renderNow(){
-  $('toggle').innerHTML=state&&state.is_playing?ICON_PAUSE:ICON_PLAY;
-  const n=$('now');n.textContent='';
-  const item=state&&state.item;
-  const art=item&&((item.album&&item.album.images&&item.album.images[0])||(item.images&&item.images[0]));
-  n.appendChild(art?img(art.url):el('div','noart'));
-  const txt=el('div');
-  txt.appendChild(el('div','t',item?item.name:'Velg noe musikk'));
-  txt.appendChild(el('div','a',item&&item.artists?item.artists.map(a=>a.name).join(', '):'\u00a0'));
-  n.appendChild(txt);
-  const ctx=state&&state.context&&state.context.uri, cur=item&&item.uri;
+  $('toggleIcon').innerHTML=state&&state.is_playing?ICON_PAUSE:ICON_PLAY;
+  const ctx=nowList?nowList.from:state&&state.context&&state.context.uri, cur=state&&state.item&&state.item.uri;
   document.querySelectorAll('.tile').forEach(t=>t.classList.toggle('playing',!!(state&&(t.dataset.uri===ctx||t.dataset.uri===cur))));
-  const d=state&&state.device, v=$('vol');
-  v.max=maxVol();
-  $('volWrap').hidden=!!(d&&d.supports_volume===false);
-  if(d&&typeof d.volume_percent==='number'&&document.activeElement!==v) v.value=Math.min(d.volume_percent,maxVol());
 }
 
 /* ---------- Voksenmodus ---------- */
 async function openParent(){
   $('parent').hidden=false;
-  $('kidName').value=store.get(K.name,'');
   $('maxVol').value=maxVol();$('maxVolLbl').textContent=maxVol()+' %';
   renderChosen();loadDevices();loadPlaylists();
 }
 function closeParent(){
-  store.set(K.name,$('kidName').value.trim());
   $('parent').hidden=true;renderGrid();poll();
 }
 function renderChosen(){
@@ -361,15 +754,49 @@ function renderChosen(){
   const items=store.get(K.items,[]);
   if(!items.length){c.appendChild(el('p',null,'Ingenting valgt ennå. Legg til fra listen eller en lenke under.'));return}
   items.forEach((it,i)=>{
-    const r=el('div','item');r.appendChild(img(it.image));r.appendChild(el('div','nm',it.name));
+    const r=el('div','item');r.appendChild(thumb(it,i));
+    // Navnet kan endres, slik at ruta får den tittelen du vil
+    const nm=el('input','nm field');nm.value=it.name;nm.setAttribute('aria-label','Tittel');
+    nm.onchange=()=>{const a=store.get(K.items,[]);const z=a.find(q=>q.uri===it.uri);if(z){z.name=nm.value.trim()||z.name;store.set(K.items,a)}};
+    r.appendChild(nm);
+    // Spillelister og album kan foldes ut for å endre bildene på sangene
+    let songBox=null;
+    if(/:(playlist|album):/.test(it.uri)){
+      songBox=el('div','songList');songBox.hidden=!expanded.has(it.uri);
+      const sb=el('button','btn ghost',songBox.hidden?'Sanger ▾':'Sanger ▴');
+      sb.onclick=()=>{
+        songBox.hidden=!songBox.hidden;sb.textContent=songBox.hidden?'Sanger ▾':'Sanger ▴';
+        if(songBox.hidden) expanded.delete(it.uri); else{expanded.add(it.uri);renderSongList(it,songBox)}
+      };
+      r.appendChild(sb);
+      if(!songBox.hidden) renderSongList(it,songBox);
+    }
     if(i>0){const up=el('button','btn ghost','↑');up.setAttribute('aria-label','Flytt opp');up.onclick=()=>{const a=store.get(K.items,[]);[a[i-1],a[i]]=[a[i],a[i-1]];store.set(K.items,a);renderChosen()};r.appendChild(up)}
     const x=el('button','btn ghost','Fjern');x.onclick=()=>{store.set(K.items,store.get(K.items,[]).filter(z=>z.uri!==it.uri));renderChosen();markPlaylists()};
     r.appendChild(x);c.appendChild(r);
+    if(songBox) c.appendChild(songBox);
   });
+}
+const expanded=new Set();
+async function renderSongList(it,box){
+  const cached=songCache[it.uri];
+  const show=songs=>{
+    box.textContent='';
+    if(!songs.length){box.appendChild(el('p',null,'Fant ingen sanger.'));return}
+    songs.forEach((s,i)=>{
+      const r=el('div','item');r.appendChild(thumb(s,i));r.appendChild(el('div','nm',s.name));box.appendChild(r);
+    });
+  };
+  if(cached) show(cached); else{box.textContent='';box.appendChild(el('p',null,'Henter sanger…'))}
+  try{
+    const fresh=await fetchSongs(it);
+    if(!cached||!sameSongs(cached,fresh)) show(fresh);
+  }catch(e){if(!cached||e.auth){box.textContent='';handleErr(e)}}
 }
 function addItem(it){
   const a=store.get(K.items,[]);
   if(a.some(z=>z.uri===it.uri)) return toast('Den er allerede lagt til.');
+  if(a.length>=MAX_ITEMS) return toast('Det er plass til '+MAX_ITEMS+'. Fjern en først.');
   a.push(it);store.set(K.items,a);renderChosen();markPlaylists();
 }
 async function loadDevices(){
@@ -432,16 +859,21 @@ async function addFromLink(){
 /* ---------- Skjermbytte og knapper ---------- */
 function showSetup(){
   $('kid').hidden=true;$('parent').hidden=true;$('setup').hidden=false;
-  $('redir').textContent=REDIRECT;$('cid').value=store.get(K.cid,'')||DEFAULT_CLIENT_ID;
+  const saved=store.get(K.cid,'');
+  $('redir').textContent=REDIRECT;$('cid').value=saved&&saved!==CLIENT_ID?saved:'';
+  // Med innebygd Client ID trenger de fleste bare innloggingsknappen
+  const easy=!!CLIENT_ID&&!$('cid').value;
+  $('own').hidden=easy;$('easyInfo').hidden=!easy;$('useOwn').hidden=!easy;
 }
 function showKid(){$('setup').hidden=true;$('kid').hidden=false;renderGrid();poll()}
 
 $('copy').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(REDIRECT).then(()=>toast('Kopiert.'),()=>{})};
 $('login').onclick=login;
+$('useOwn').onclick=()=>{$('own').hidden=false;$('easyInfo').hidden=true;$('useOwn').hidden=true};
 $('toggle').onclick=toggle;
+$('closeSongs').onclick=closeSongs;
 $('prev').onclick=()=>skip('previous');
 $('next').onclick=()=>skip('next');
-$('vol').oninput=e=>setVol(+e.target.value);
 $('done').onclick=closeParent;
 $('refreshDev').onclick=loadDevices;
 $('addLink').onclick=addFromLink;
@@ -456,6 +888,14 @@ gear.addEventListener('pointerdown',e=>{e.preventDefault();gear.classList.add('h
   gear.classList.remove('holding');
 }));
 gear.addEventListener('contextmenu',e=>e.preventDefault());
+
+// Blokkerer all zoom (knip med to fingre og dobbelttrykk) i barnevisningen.
+// Voksenmodus og oppsett kan fortsatt zoomes.
+const kidView=()=>!$('kid').hidden&&$('parent').hidden&&$('picker').hidden;
+['gesturestart','gesturechange','gestureend'].forEach(ev=>
+  document.addEventListener(ev,e=>{if(kidView()) e.preventDefault()},{passive:false}));
+document.addEventListener('touchmove',e=>{if(kidView()&&e.touches.length>1) e.preventDefault()},{passive:false});
+document.addEventListener('dblclick',e=>{if(kidView()) e.preventDefault()},{passive:false});
 
 setInterval(poll,4000);
 document.addEventListener('visibilitychange',poll);
